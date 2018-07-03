@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.justcount</groupId>
-    <artifactId>java-client</artifactId>
+    <artifactId>justcount-java-client</artifactId>
     <packaging>pom</packaging>
-    <version>0.1</version>
+    <version>0.1.0</version>
 
     <dependencies>
         <dependency>
