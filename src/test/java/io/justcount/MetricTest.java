@@ -28,4 +28,5 @@ public class MetricTest {
         m1.realm = "";
         assertNotEquals(m1, m2);
     }
+
 }

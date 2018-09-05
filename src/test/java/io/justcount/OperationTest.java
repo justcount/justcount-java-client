@@ -9,7 +9,6 @@ public class OperationTest {
 
     @Test
     public void testGson() {
-
         Gson gson = new Gson();
 
         Operation[] operations = {
@@ -25,4 +24,5 @@ public class OperationTest {
 
         assertEquals("{\"metric\":{\"name\":\"somecounter\",\"realm\":\"wp\",\"backend\":\"events\"},\"tenant\":\"testTenant\",\"params\":{\"browser\":\"safari\"},\"dimensions\":{\"version\":\"10\"},\"op\":{\"addInt\":{\"value\":1}}}", gson.toJson(operations[0]));
     }
+
 }
