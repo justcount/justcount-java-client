@@ -95,7 +95,7 @@ public class PubSubClient {
     }
 
     public synchronized ApiFuture<Boolean> send(final Operation[] operations) {
-        final SettableApiFuture<Boolean> result = SettableApiFuture.<Boolean>create();
+        final SettableApiFuture<Boolean> result = SettableApiFuture.create();
 
         if (this.closeFuture != null) {
             result.set(false);
@@ -142,7 +142,7 @@ public class PubSubClient {
         if (this.closeFuture != null) {
             return this.closeFuture;
         }
-        this.closeFuture = SettableApiFuture.<Boolean>create();
+        this.closeFuture = SettableApiFuture.create();
 
         this.publisher.shutdown();
 
