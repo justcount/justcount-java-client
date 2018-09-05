@@ -5,7 +5,7 @@
     <groupId>io.justcount</groupId>
     <artifactId>justcount-java-client</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
 
     <url>http://github.com/justcount/justcount-java-client</url>
     <scm>

@@ -94,7 +94,7 @@ public class PubSubClient {
         this.publisher = builder.build();
     }
 
-    public synchronized ApiFuture<Boolean> send(final Operation[] operations) {
+    public synchronized ApiFuture<Boolean> send(final Collection<Operation> operations) {
         final SettableApiFuture<Boolean> result = SettableApiFuture.create();
 
         if (this.closeFuture != null) {
@@ -108,14 +108,13 @@ public class PubSubClient {
                 .build();
         ApiFuture<String> messageIdFuture = this.publisher.publish(message);
 
-        final Collection<Operation> operationsColl = Arrays.asList(operations);
-        unsentOperations.addAll(operationsColl);
+        unsentOperations.addAll(operations);
 
         ApiFutures.addCallback(messageIdFuture, new ApiFutureCallback<String>() {
             public void onFailure(Throwable throwable) {
                 synchronized (PubSubClient.this) {
                     result.set(false);
-                    unsentOperations.removeAll(operationsColl);
+                    unsentOperations.removeAll(operations);
                     PubSubClient.this.onOperationsSent();
                 }
             }
@@ -123,7 +122,7 @@ public class PubSubClient {
             public void onSuccess(String s) {
                 synchronized (PubSubClient.this) {
                     result.set(true);
-                    unsentOperations.removeAll(operationsColl);
+                    unsentOperations.removeAll(operations);
                     PubSubClient.this.onOperationsSent();
                 }
             }

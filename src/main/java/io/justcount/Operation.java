@@ -1,5 +1,6 @@
 package io.justcount;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -110,9 +111,9 @@ public class Operation {
 
     public static class Bulk {
 
-        public Operation[] bulk;
+        public Collection<Operation> bulk;
 
-        public Bulk(Operation[] operations) {
+        public Bulk(Collection<Operation> operations) {
             this.bulk = operations;
         }
 
