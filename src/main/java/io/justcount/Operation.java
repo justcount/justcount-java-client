@@ -55,6 +55,10 @@ public class Operation {
             operation.params.put(name, value);
             return this;
         }
+        public Builder setDimension(String name, String value) {
+            operation.dimensions.put(name, value);
+            return this;
+        }
         public Builder setTenant(String tenant) {
             operation.tenant = tenant;
             return this;
@@ -64,6 +68,7 @@ public class Operation {
     public String tenant;
     public Date date;
     public Map<String, String> params = new HashMap<String, String>();
+    public Map<String, String> dimensions = new HashMap<String, String>();
     public Op op;
     public static class Op {
         public static class IntegerValue {
