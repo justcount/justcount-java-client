@@ -2,6 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <name>justcount-java-client</name>
+    <description>
+        Count massively from your Java application
+    </description>
+    <inceptionYear>2018</inceptionYear>
+
     <groupId>io.justcount</groupId>
     <artifactId>justcount-java-client</artifactId>
     <packaging>jar</packaging>
@@ -14,6 +20,35 @@
         <url>https://github.com/justcount/justcount-java-client.git</url>
         <tag>HEAD</tag>
     </scm>
+
+    <licenses>
+        <license>
+            <name>The MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>justcount</id>
+            <name>JustCount.io Team</name>
+            <email>https://spamty.eu/mail/v4/1298/xerjQngitl04230bbc/</email>
+            <timezone>Europe/Paris</timezone>
+        </developer>
+        <developer>
+            <id>sjais</id>
+            <name>Stéphane Jaïs</name>
+            <email>https://spamty.eu/mail/v4/1297/xkQwDq00lB5d3be796/</email>
+            <timezone>Europe/Madrid</timezone>
+        </developer>
+        <developer>
+            <id>ofavre</id>
+            <name>Olivier Favre</name>
+            <email>https://spamty.eu/mail/v4/1296/gz07D3v9Rs45a32193/</email>
+            <timezone>Europe/Paris</timezone>
+        </developer>
+    </developers>
 
     <distributionManagement>
         <repository>
