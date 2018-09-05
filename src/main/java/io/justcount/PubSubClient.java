@@ -92,8 +92,8 @@ public class PubSubClient {
         this.publisher = builder.build();
     }
 
-    public ApiFuture<Boolean> send(final Collection<Operation> operations) {
-        final SettableApiFuture<Boolean> result = SettableApiFuture.create();
+    public ApiFuture<Void> send(final Collection<Operation> operations) {
+        final SettableApiFuture<Void> result = SettableApiFuture.create();
 
         String json = gson.toJson(new Operation.Bulk(operations));
         PubsubMessage message = PubsubMessage.newBuilder()
@@ -109,11 +109,11 @@ public class PubSubClient {
 
         ApiFutures.addCallback(messageIdFuture, new ApiFutureCallback<String>() {
             public void onFailure(Throwable throwable) {
-                result.set(false);
+                result.setException(throwable);
             }
 
             public void onSuccess(String s) {
-                result.set(true);
+                result.set(null);
             }
         });
 
