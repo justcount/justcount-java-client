@@ -20,10 +20,7 @@ import org.threeten.bp.Duration;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class PubSubClient {
 
@@ -111,17 +108,14 @@ public class PubSubClient {
                 .build();
         ApiFuture<String> messageIdFuture = this.publisher.publish(message);
 
-        for (int i = 0; i < operations.length; i++) {
-            unsentOperations.add(operations[i]);
-        }
+        final Collection<Operation> operationsColl = Arrays.asList(operations);
+        unsentOperations.addAll(operationsColl);
 
         ApiFutures.addCallback(messageIdFuture, new ApiFutureCallback<String>() {
             public void onFailure(Throwable throwable) {
                 synchronized (PubSubClient.this) {
                     result.set(false);
-                    for (int i = 0; i < operations.length; i++) {
-                        unsentOperations.remove(operations[i]);
-                    }
+                    unsentOperations.removeAll(operationsColl);
                     PubSubClient.this.onOperationsSent();
                 }
             }
@@ -129,9 +123,7 @@ public class PubSubClient {
             public void onSuccess(String s) {
                 synchronized (PubSubClient.this) {
                     result.set(true);
-                    for (int i = 0; i < operations.length; i++) {
-                        unsentOperations.remove(operations[i]);
-                    }
+                    unsentOperations.removeAll(operationsColl);
                     PubSubClient.this.onOperationsSent();
                 }
             }
