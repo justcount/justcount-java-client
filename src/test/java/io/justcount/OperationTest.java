@@ -15,12 +15,14 @@ public class OperationTest {
         Operation[] operations = {
                 Operation.Builder.AddInt(Metric.from("wp:events:somecounter"), 1)
                         .setParam("browser", "safari")
+                        .setDimension("version", "10")
                         .setTenant("testTenant").build(),
                 Operation.Builder.AddInt(Metric.from("wp:events:othercounter"), 1)
                         .setParam("browser", "safari")
+                        .setDimension("version", "10")
                         .setTenant("testTenant").build(),
         };
 
-        assertEquals("{\"metric\":{\"name\":\"somecounter\",\"realm\":\"wp\",\"backend\":\"events\"},\"tenant\":\"testTenant\",\"params\":{\"browser\":\"safari\"},\"op\":{\"addInt\":{\"value\":1}}}", gson.toJson(operations[0]));
+        assertEquals("{\"metric\":{\"name\":\"somecounter\",\"realm\":\"wp\",\"backend\":\"events\"},\"tenant\":\"testTenant\",\"params\":{\"browser\":\"safari\"},\"dimensions\":{\"version\":\"10\"},\"op\":{\"addInt\":{\"value\":1}}}", gson.toJson(operations[0]));
     }
 }
