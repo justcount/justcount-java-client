@@ -80,7 +80,7 @@ public class PubSubClient {
         // Build the publisher
         this.publisher = builder.build();
     }
-    public ApiFuture<Boolean> send(final Operation[] operations) {
+    public synchronized ApiFuture<Boolean> send(final Operation[] operations) {
         if (null != this.closeFuture) {
             SettableApiFuture<Boolean> result = SettableApiFuture.<Boolean>create();
             result.set(false);
@@ -95,15 +95,19 @@ public class PubSubClient {
         for (int i = 0; i < operations.length; i++) unsentOperations.add(operations[i]);
         ApiFutures.addCallback(messageIdFuture, new ApiFutureCallback<String>() {
             public void onFailure(Throwable throwable) {
-                result.set(false);
-                for (int i = 0; i < operations.length; i++) unsentOperations.remove(operations[i]);
-                PubSubClient.this.onOperationsSent();
+                synchronized (PubSubClient.this) {
+                    result.set(false);
+                    for (int i = 0; i < operations.length; i++) unsentOperations.remove(operations[i]);
+                    PubSubClient.this.onOperationsSent();
+                }
             }
 
             public void onSuccess(String s) {
-                result.set(true);
-                for (int i = 0; i < operations.length; i++) unsentOperations.remove(operations[i]);
-                PubSubClient.this.onOperationsSent();
+                synchronized(PubSubClient.this) {
+                    result.set(true);
+                    for (int i = 0; i < operations.length; i++) unsentOperations.remove(operations[i]);
+                    PubSubClient.this.onOperationsSent();
+                }
             }
         });
         return result;
@@ -113,7 +117,7 @@ public class PubSubClient {
             this.closeFuture.set(true);
         }
     }
-    public ApiFuture<Boolean> close() throws Exception {
+    public synchronized ApiFuture<Boolean> close() throws Exception {
         if (null != this.closeFuture) return this.closeFuture;
         this.publisher.shutdown();
         this.closeFuture = SettableApiFuture.<Boolean>create();
