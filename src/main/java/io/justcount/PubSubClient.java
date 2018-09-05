@@ -44,8 +44,6 @@ public class PubSubClient {
 
     private Publisher publisher;
     private Gson gson;
-    private Set<Operation> unsentOperations = new HashSet<Operation>();
-    private SettableApiFuture<Boolean> closeFuture;
 
     public PubSubClient(String keyFilename) throws IOException {
         this(new PubSubClient.Options(keyFilename));
@@ -94,62 +92,36 @@ public class PubSubClient {
         this.publisher = builder.build();
     }
 
-    public synchronized ApiFuture<Boolean> send(final Collection<Operation> operations) {
+    public ApiFuture<Boolean> send(final Collection<Operation> operations) {
         final SettableApiFuture<Boolean> result = SettableApiFuture.create();
-
-        if (this.closeFuture != null) {
-            result.set(false);
-            return result;
-        }
 
         String json = gson.toJson(new Operation.Bulk(operations));
         PubsubMessage message = PubsubMessage.newBuilder()
                 .setData(ByteString.copyFromUtf8(json))
                 .build();
-        ApiFuture<String> messageIdFuture = this.publisher.publish(message);
-
-        unsentOperations.addAll(operations);
+        ApiFuture<String> messageIdFuture;
+        try {
+            messageIdFuture = this.publisher.publish(message);
+        } catch (IllegalStateException ex) {
+            result.setException(ex);
+            return result;
+        }
 
         ApiFutures.addCallback(messageIdFuture, new ApiFutureCallback<String>() {
             public void onFailure(Throwable throwable) {
-                synchronized (PubSubClient.this) {
-                    result.set(false);
-                    unsentOperations.removeAll(operations);
-                    PubSubClient.this.onOperationsSent();
-                }
+                result.set(false);
             }
 
             public void onSuccess(String s) {
-                synchronized (PubSubClient.this) {
-                    result.set(true);
-                    unsentOperations.removeAll(operations);
-                    PubSubClient.this.onOperationsSent();
-                }
+                result.set(true);
             }
         });
 
         return result;
     }
 
-    private void onOperationsSent() {
-        if (this.closeFuture != null && unsentOperations.size() == 0) {
-            this.closeFuture.set(true);
-        }
-    }
-
-    public synchronized ApiFuture<Boolean> close() throws Exception {
-        if (this.closeFuture != null) {
-            return this.closeFuture;
-        }
-        this.closeFuture = SettableApiFuture.create();
-
+    public void close() throws Exception {
         this.publisher.shutdown();
-
-        if (this.unsentOperations.size() == 0) {
-            this.closeFuture.set(true);
-        }
-
-        return this.closeFuture;
     }
 
 }
