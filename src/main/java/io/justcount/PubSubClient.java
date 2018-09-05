@@ -26,41 +26,51 @@ import java.util.Map;
 import java.util.Set;
 
 public class PubSubClient {
+
     public static class Options {
+
         public Options(String keyFilename) {
             this.keyFilename = keyFilename;
         }
+
         public String keyFilename;
         public String topic = "justcount";
         public Batching batching = new Batching();
+
         public static class Batching {
             public Long delayThresholdMilliseconds = 0L;
             public Long elementCountThreshold = 0L;
             public Long requestByteThreshold = 0L;
         }
+
     }
+
     private Publisher publisher;
     private Gson gson;
     private Set<Operation> unsentOperations = new HashSet<Operation>();
     private SettableApiFuture<Boolean> closeFuture;
+
     public PubSubClient(String keyFilename) throws IOException {
         this(new PubSubClient.Options(keyFilename));
     }
+
     public PubSubClient(PubSubClient.Options options) throws IOException {
         this.gson = new Gson();
 
         FileReader keyFileReader = new FileReader(options.keyFilename);
         Map<String, Object> retMap = this.gson.fromJson(
-                keyFileReader, new TypeToken<HashMap<String, Object>>() {}.getType()
+                keyFileReader,
+                new TypeToken<HashMap<String, Object>>() {}.getType()
         );
-        String project = (String)retMap.get("project_id");
+        String project = (String) retMap.get("project_id");
 
         // Topic name
         ProjectTopicName topicName = ProjectTopicName.of(project, options.topic);
         Publisher.Builder builder = Publisher.newBuilder(topicName);
 
         // Auth
-        final GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream(options.keyFilename))
+        final GoogleCredentials credentials = GoogleCredentials
+                .fromStream(new FileInputStream(options.keyFilename))
                 .createScoped(Lists.newArrayList("https://www.googleapis.com/auth/cloud-platform"));
 
         builder.setCredentialsProvider(new CredentialsProvider() {
@@ -72,56 +82,83 @@ public class PubSubClient {
         // Batching
         BatchingSettings.Builder batchingSettingsBuilder = BatchingSettings.newBuilder();
         batchingSettingsBuilder.setIsEnabled(true);
-        if (options.batching.delayThresholdMilliseconds > 0) batchingSettingsBuilder.setDelayThreshold(Duration.ofMillis(options.batching.delayThresholdMilliseconds));
-        if (options.batching.elementCountThreshold > 0) batchingSettingsBuilder.setElementCountThreshold(options.batching.elementCountThreshold);
-        if (options.batching.requestByteThreshold > 0) batchingSettingsBuilder.setRequestByteThreshold(options.batching.requestByteThreshold).build();
+        if (options.batching.delayThresholdMilliseconds > 0) {
+            batchingSettingsBuilder.setDelayThreshold(Duration.ofMillis(options.batching.delayThresholdMilliseconds));
+        }
+        if (options.batching.elementCountThreshold > 0) {
+            batchingSettingsBuilder.setElementCountThreshold(options.batching.elementCountThreshold);
+        }
+        if (options.batching.requestByteThreshold > 0) {
+            batchingSettingsBuilder.setRequestByteThreshold(options.batching.requestByteThreshold).build();
+        }
         builder.setBatchingSettings(batchingSettingsBuilder.build());
 
         // Build the publisher
         this.publisher = builder.build();
     }
+
     public synchronized ApiFuture<Boolean> send(final Operation[] operations) {
-        if (null != this.closeFuture) {
-            SettableApiFuture<Boolean> result = SettableApiFuture.<Boolean>create();
+        final SettableApiFuture<Boolean> result = SettableApiFuture.<Boolean>create();
+
+        if (this.closeFuture != null) {
             result.set(false);
             return result;
         }
+
         String json = gson.toJson(new Operation.Bulk(operations));
         PubsubMessage message = PubsubMessage.newBuilder()
                 .setData(ByteString.copyFromUtf8(json))
                 .build();
         ApiFuture<String> messageIdFuture = this.publisher.publish(message);
-        final SettableApiFuture<Boolean> result = SettableApiFuture.<Boolean>create();
-        for (int i = 0; i < operations.length; i++) unsentOperations.add(operations[i]);
+
+        for (int i = 0; i < operations.length; i++) {
+            unsentOperations.add(operations[i]);
+        }
+
         ApiFutures.addCallback(messageIdFuture, new ApiFutureCallback<String>() {
             public void onFailure(Throwable throwable) {
                 synchronized (PubSubClient.this) {
                     result.set(false);
-                    for (int i = 0; i < operations.length; i++) unsentOperations.remove(operations[i]);
+                    for (int i = 0; i < operations.length; i++) {
+                        unsentOperations.remove(operations[i]);
+                    }
                     PubSubClient.this.onOperationsSent();
                 }
             }
 
             public void onSuccess(String s) {
-                synchronized(PubSubClient.this) {
+                synchronized (PubSubClient.this) {
                     result.set(true);
-                    for (int i = 0; i < operations.length; i++) unsentOperations.remove(operations[i]);
+                    for (int i = 0; i < operations.length; i++) {
+                        unsentOperations.remove(operations[i]);
+                    }
                     PubSubClient.this.onOperationsSent();
                 }
             }
         });
+
         return result;
     }
+
     private void onOperationsSent() {
-        if (this.closeFuture != null && 0 == unsentOperations.size()) {
+        if (this.closeFuture != null && unsentOperations.size() == 0) {
             this.closeFuture.set(true);
         }
     }
+
     public synchronized ApiFuture<Boolean> close() throws Exception {
-        if (null != this.closeFuture) return this.closeFuture;
-        this.publisher.shutdown();
+        if (this.closeFuture != null) {
+            return this.closeFuture;
+        }
         this.closeFuture = SettableApiFuture.<Boolean>create();
-        if (this.unsentOperations.size() == 0) this.closeFuture.set(true);
+
+        this.publisher.shutdown();
+
+        if (this.unsentOperations.size() == 0) {
+            this.closeFuture.set(true);
+        }
+
         return this.closeFuture;
     }
+
 }
