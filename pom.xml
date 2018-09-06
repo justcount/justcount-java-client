@@ -11,14 +11,14 @@
     <groupId>io.justcount</groupId>
     <artifactId>justcount-java-client</artifactId>
     <packaging>jar</packaging>
-    <version>0.2.1-SNAPSHOT</version>
+    <version>0.3.0</version>
 
     <url>http://github.com/justcount/justcount-java-client</url>
     <scm>
         <connection>scm:git:git@github.com:justcount/justcount-java-client.git</connection>
         <developerConnection>scm:git:git@github.com:justcount/justcount-java-client.git</developerConnection>
         <url>https://github.com/justcount/justcount-java-client.git</url>
-        <tag>HEAD</tag>
+        <tag>v0.3.0</tag>
     </scm>
 
     <licenses>
