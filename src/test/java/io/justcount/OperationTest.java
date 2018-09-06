@@ -12,17 +12,25 @@ public class OperationTest {
         Gson gson = new Gson();
 
         Operation[] operations = {
-                Operation.Builder.AddInt(Metric.from("wp:events:somecounter"), 1)
+                new Operation.Builder()
+                        .setRealm("wp")
+                        .setTenant("testTenant")
+                        .setMetric("events")
                         .setParam("browser", "safari")
                         .setDimension("version", "10")
-                        .setTenant("testTenant").build(),
-                Operation.Builder.AddInt(Metric.from("wp:events:othercounter"), 1)
+                        .setOp(Operation.Op.AddInt(1))
+                        .build(),
+                new Operation.Builder()
+                        .setRealm("wp")
+                        .setTenant("testTenant")
+                        .setMetric("othercounter")
                         .setParam("browser", "safari")
                         .setDimension("version", "10")
-                        .setTenant("testTenant").build(),
+                        .setOp(Operation.Op.AddInt(1))
+                        .build(),
         };
 
-        assertEquals("{\"metric\":{\"name\":\"somecounter\",\"realm\":\"wp\",\"backend\":\"events\"},\"tenant\":\"testTenant\",\"params\":{\"browser\":\"safari\"},\"dimensions\":{\"version\":\"10\"},\"op\":{\"addInt\":{\"value\":1}}}", gson.toJson(operations[0]));
+        assertEquals("{\"realm\":\"wp\",\"tenant\":\"testTenant\",\"metric\":\"events\",\"params\":{\"browser\":\"safari\"},\"dimensions\":{\"version\":\"10\"},\"op\":{\"addInt\":{\"value\":1}}}", gson.toJson(operations[0]));
     }
 
 }
