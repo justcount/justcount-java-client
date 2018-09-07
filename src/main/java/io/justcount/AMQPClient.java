@@ -39,6 +39,10 @@ public class AMQPClient {
 
         // No connection yet ?
         if (connection == null || !connection.isOpen()) {
+            // Close any open things first before reopening any
+            close();
+
+            // New connection
             ConnectionFactory factory = new ConnectionFactory();
             factory.setHost(this.options.host);
             factory.setPort(this.options.port);
