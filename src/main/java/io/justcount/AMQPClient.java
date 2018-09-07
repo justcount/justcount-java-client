@@ -90,12 +90,16 @@ public class AMQPClient implements Client {
     }
 
     public void close() throws IOException, TimeoutException {
-        if (null != this.channel) {
-            this.channel.close();
+        if (this.channel != null) {
+            if (this.channel.isOpen()) {
+                this.channel.close();
+            }
             this.channel = null;
         }
-        if (null != this.connection) {
-            this.connection.close();
+        if (this.connection != null) {
+            if (this.connection.isOpen()) {
+                this.connection.close();
+            }
             this.connection = null;
         }
     }
