@@ -4,15 +4,13 @@ import com.google.gson.Gson;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.MessageProperties;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public class AMQPClient {
     public static class Options {
@@ -57,14 +55,17 @@ public class AMQPClient {
     public void send(final Collection<Operation> operations) throws IOException, TimeoutException {
         String json = gson.toJson(new Operation.Bulk(operations));
         connect();
-        channel.basicPublish("", this.options.queue, null, json.getBytes("UTF-8"));
+        channel.basicPublish("", this.options.queue, true, false, MessageProperties.MINIMAL_PERSISTENT_BASIC, json.getBytes("UTF-8"));
     }
 
     public void close() throws IOException, TimeoutException {
         if (null != this.channel) {
-            Connection conn = this.channel.getConnection();
             this.channel.close();
-            if (null != conn) conn.close();
+            this.channel = null;
+        }
+        if (null != this.connection) {
+            this.connection.close();
+            this.connection = null;
         }
     }
 }
