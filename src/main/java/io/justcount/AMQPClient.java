@@ -7,10 +7,12 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.MessageProperties;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-public class AMQPClient {
+public class AMQPClient implements Client {
 
     public static class Options {
 
@@ -24,12 +26,14 @@ public class AMQPClient {
 
     }
 
+    private Charset charset;
     private Options options;
     private Channel channel;
     private Connection connection;
     private Gson gson;
 
     public AMQPClient(Options options) {
+        this.charset = Charset.forName("UTF-8");
         this.options = options;
         this.gson = new Gson();
     }
@@ -64,17 +68,25 @@ public class AMQPClient {
         }
     }
 
-    public void send(final Collection<Operation> operations) throws IOException, TimeoutException {
-        String json = gson.toJson(new Operation.Bulk(operations));
-        connect();
-        channel.basicPublish(
-                this.options.exchange,
-                this.options.routingKey,
-                true,  // mandatory
-                false, // immediate
-                MessageProperties.MINIMAL_PERSISTENT_BASIC,
-                json.getBytes("UTF-8")
-        );
+    // Note: This function is synchronous but conforms to the async Client interface
+    public CompletableFuture<Void> send(final Collection<Operation> operations) {
+        CompletableFuture<Void> rtn = new CompletableFuture<>();
+        try {
+            String json = gson.toJson(new Operation.Bulk(operations));
+            connect();
+            channel.basicPublish(
+                    this.options.exchange,
+                    this.options.routingKey,
+                    true,  // mandatory
+                    false, // immediate
+                    MessageProperties.MINIMAL_PERSISTENT_BASIC,
+                    json.getBytes(this.charset)
+            );
+            rtn.complete(null);
+        } catch (IOException | TimeoutException ex) {
+            rtn.completeExceptionally(ex);
+        }
+        return rtn;
     }
 
     public void close() throws IOException, TimeoutException {

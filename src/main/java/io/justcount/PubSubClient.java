@@ -5,8 +5,6 @@ import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.api.core.SettableApiFuture;
 import com.google.api.gax.batching.BatchingSettings;
-import com.google.api.gax.core.CredentialsProvider;
-import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.common.collect.Lists;
@@ -20,9 +18,12 @@ import org.threeten.bp.Duration;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-public class PubSubClient {
+public class PubSubClient implements Client {
 
     public static class Options {
 
@@ -68,11 +69,7 @@ public class PubSubClient {
                 .fromStream(new FileInputStream(options.keyFilename))
                 .createScoped(Lists.newArrayList("https://www.googleapis.com/auth/cloud-platform"));
 
-        builder.setCredentialsProvider(new CredentialsProvider() {
-            public Credentials getCredentials() throws IOException {
-                return credentials;
-            }
-        });
+        builder.setCredentialsProvider(() -> credentials);
 
         // Batching
         BatchingSettings.Builder batchingSettingsBuilder = BatchingSettings.newBuilder();
@@ -92,7 +89,7 @@ public class PubSubClient {
         this.publisher = builder.build();
     }
 
-    public ApiFuture<Void> send(final Collection<Operation> operations) {
+    public CompletableFuture<Void> send(final Collection<Operation> operations) {
         final SettableApiFuture<Void> result = SettableApiFuture.create();
 
         String json = gson.toJson(new Operation.Bulk(operations));
@@ -104,7 +101,7 @@ public class PubSubClient {
             messageIdFuture = this.publisher.publish(message);
         } catch (IllegalStateException ex) {
             result.setException(ex);
-            return result;
+            return apiFutureToCompletableFuture(result);
         }
 
         ApiFutures.addCallback(messageIdFuture, new ApiFutureCallback<String>() {
@@ -117,11 +114,27 @@ public class PubSubClient {
             }
         });
 
-        return result;
+        return apiFutureToCompletableFuture(result);
     }
 
     public void close() throws Exception {
         this.publisher.shutdown();
+    }
+
+    private static <T> CompletableFuture<T> apiFutureToCompletableFuture(ApiFuture<T> future) {
+        CompletableFuture<T> rtn = new CompletableFuture<>();
+
+        ApiFutures.addCallback(future, new ApiFutureCallback<T>() {
+            public void onFailure(Throwable throwable) {
+                rtn.completeExceptionally(throwable);
+            }
+
+            public void onSuccess(T value) {
+                rtn.complete(value);
+            }
+        });
+
+        return rtn;
     }
 
 }
