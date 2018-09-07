@@ -18,8 +18,9 @@ public class AMQPClient {
         public int port = 5672;
         public String username;
         public String password;
-        public String virtualHost;
-        public String queue = "restats";
+        public String virtualHost = "/";
+        public String exchange = "";
+        public String routingKey = "justcount";
 
     }
 
@@ -58,15 +59,17 @@ public class AMQPClient {
             connection = factory.newConnection();
         }
         this.channel = connection.createChannel();
-        this.channel.queueDeclarePassive(this.options.queue);
+        if (this.options.exchange.equals("")) {
+            this.channel.queueDeclarePassive(this.options.routingKey);
+        }
     }
 
     public void send(final Collection<Operation> operations) throws IOException, TimeoutException {
         String json = gson.toJson(new Operation.Bulk(operations));
         connect();
         channel.basicPublish(
-                "", // exchange
-                this.options.queue,
+                this.options.exchange,
+                this.options.routingKey,
                 true,  // mandatory
                 false, // immediate
                 MessageProperties.MINIMAL_PERSISTENT_BASIC,
