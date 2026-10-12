@@ -27,11 +27,24 @@ public class PubSubClient implements Client {
 
     public static class Options {
 
+        /**
+         * Use Application Default Credentials (e.g. the GCE VM service account).
+         * {@link #project} must then be set.
+         */
+        public Options() {
+        }
+
+        /**
+         * @param keyFilename path to a service account key file, or null/empty to use Application Default Credentials
+         */
         public Options(String keyFilename) {
             this.keyFilename = keyFilename;
         }
 
+        /** Service account key file. When null or empty, Application Default Credentials are used. */
         public String keyFilename;
+        /** Project holding the topic. Defaults to the project_id of the key file, and is required without a key file. */
+        public String project;
         public String topic = "justcount";
         public Batching batching = new Batching();
 
@@ -53,20 +66,30 @@ public class PubSubClient implements Client {
     public PubSubClient(PubSubClient.Options options) throws IOException {
         this.gson = new Gson();
 
-        FileReader keyFileReader = new FileReader(options.keyFilename);
-        Map<String, Object> retMap = this.gson.fromJson(
-                keyFileReader,
-                new TypeToken<HashMap<String, Object>>() {}.getType()
-        );
-        String project = (String) retMap.get("project_id");
+        final boolean hasKeyFile = options.keyFilename != null && !options.keyFilename.isEmpty();
+
+        String project = options.project;
+        if (project == null || project.isEmpty()) {
+            if (!hasKeyFile) {
+                throw new IllegalArgumentException("A project is required when no service account key file is provided");
+            }
+            try (FileReader keyFileReader = new FileReader(options.keyFilename)) {
+                Map<String, Object> retMap = this.gson.fromJson(
+                        keyFileReader,
+                        new TypeToken<HashMap<String, Object>>() {}.getType()
+                );
+                project = (String) retMap.get("project_id");
+            }
+        }
 
         // Topic name
         ProjectTopicName topicName = ProjectTopicName.of(project, options.topic);
         Publisher.Builder builder = Publisher.newBuilder(topicName);
 
-        // Auth
-        final GoogleCredentials credentials = GoogleCredentials
-                .fromStream(new FileInputStream(options.keyFilename))
+        // Auth: the key file if provided, otherwise Application Default Credentials (e.g. the GCE VM service account)
+        final GoogleCredentials credentials = (hasKeyFile
+                ? GoogleCredentials.fromStream(new FileInputStream(options.keyFilename))
+                : GoogleCredentials.getApplicationDefault())
                 .createScoped(Lists.newArrayList("https://www.googleapis.com/auth/cloud-platform"));
 
         builder.setCredentialsProvider(() -> credentials);

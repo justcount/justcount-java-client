@@ -28,3 +28,14 @@ ApiFutures.addCallback(closeFuture, new ApiFutureCallback<Boolean>() {
 });
 closeFuture.get();
 ```
+
+To authenticate with Application Default Credentials (e.g. the GCE VM service account) instead of a key file,
+omit the key file and set the project holding the topic:
+
+```
+PubSubClient.Options clientOptions = new PubSubClient.Options();
+clientOptions.project = "my-gcp-project";
+PubSubClient client = new PubSubClient(clientOptions);
+```
+
+When a key file is given, `project` is optional and defaults to the key file's `project_id`.
